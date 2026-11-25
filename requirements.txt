@@ -28,3 +28,6 @@ pwdlib[argon2]
 
 #Library to implement JWT
 pyjwt
+
+# Library to analize code effientely in opencode
+pyright

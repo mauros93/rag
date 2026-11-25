@@ -1,25 +1,32 @@
 # Session representa una sesión de trabajo con SQLAlchemy.
 from sqlalchemy.orm import Session
 
-# HTTPException permite generar respuestas de error HTTP.
-from fastapi import HTTPException, status
+from app.core.exceptions import (
+    EmailAlreadyRegisteredError,
+    NullFieldError,
+    UserNotFoundError,
+)
 
-# Repository encapsula las operaciones de acceso a datos.
-from app.repositories.user_repository import UserRepository
+# Genera el hash seguro de la contraseña con Argon2id.
+from app.core.security import hash_password
 
 # User es el modelo ORM que representa la tabla users.
 from app.models.user_model import User, UserRole
 
+# Repository encapsula las operaciones de acceso a datos.
+from app.repositories.user_repository import UserRepository
+
 # UserIn, User valida los datos recibidos desde el cliente.
 from app.schemas.user_schema import UserIn, UserUpdate
 
-# Genera hashes seguros utilizando bcrypt.
-from app.core.security import hash_password
-
 
 class UserService:
-    """
-    Contiene la lógica de negocio relacionada con los usuarios.
+    """Contiene la lógica de negocio relacionada con los usuarios.
+
+    Coordina las operaciones a través de ``UserRepository`` y lanza
+    excepciones de dominio como ``UserNotFoundError`` o
+    ``EmailAlreadyRegisteredError``. La capa HTTP las traduce a respuestas
+    concretas mediante los manejadores de ``app.main``.
     """
 
     def __init__(self, db: Session):
@@ -37,10 +44,7 @@ class UserService:
         existing_user = self.user_repository.get_by_email(user_data.email)
 
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="El correo electrónico ya está registrado"
-            )
+            raise EmailAlreadyRegisteredError()
 
         hashed_password = hash_password(user_data.password)
 
@@ -61,12 +65,10 @@ class UserService:
 
         user = self.user_repository.get_by_id(user_id)
 
-        # Si el repositorio no encuentra el usuario, devolvemos 404.
+        # Si el repositorio no encuentra el usuario, lanzamos el error de
+        # dominio que la capa HTTP traduce a un 404.
         if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario no encontrado"
-            )
+            raise UserNotFoundError()
 
         return user
 
@@ -85,10 +87,7 @@ class UserService:
         user = self.user_repository.get_by_id(user_id)
 
         if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario no encontrado"
-            )
+            raise UserNotFoundError()
 
         # Obtiene únicamente los campos enviados por el cliente.
         update_data = user_data.model_dump(exclude_unset=True)
@@ -96,20 +95,14 @@ class UserService:
         # Evita que se envíen valores nulos para estos campos.
         for field, value in update_data.items():
             if value is None:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"El campo {field} no puede ser null"
-                )
+                raise NullFieldError(field)
 
         # Comprueba que el nuevo correo no pertenezca a otro usuario.
         if "email" in update_data:
             existing_user = self.user_repository.get_by_email(update_data["email"])
 
             if existing_user and existing_user.id != user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="El correo electrónico ya está registrado"
-                )
+                raise EmailAlreadyRegisteredError()
 
         # Modifica únicamente los atributos recibidos.
         for field, value in update_data.items():
@@ -122,10 +115,7 @@ class UserService:
         user = self.user_repository.get_by_id(user_id)
 
         if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario no encontrado"
-            )
+            raise UserNotFoundError()
 
         self.user_repository.delete(user)
 
@@ -139,10 +129,7 @@ class UserService:
         user = self.user_repository.get_by_id(user_id)
 
         if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+            raise UserNotFoundError()
 
         user.role = new_role
 

@@ -1,0 +1,51 @@
+
+# Define los servicios (contenedores) que componen el proyecto.
+services:
+
+  # Servicio encargado de ejecutar PostgreSQL. un servicio dice las configuraciones de nuestro conatiner
+  # "db" es el nombre interno del servicio dentro de Docker Compose.
+  db:
+
+    # Imagen de Docker que se utilizará para crear el contenedor,
+    image: postgres:18.6
+
+    # Nombre que tendrá el contenedor en Docker.
+    container_name: rag_postgres
+
+    # Política de reinicio:
+    # - unless-stopped: reinicia el contenedor si falla o Docker se reinicia.
+    restart: unless-stopped
+
+    # Variables de entorno que se enviarán al contenedor. Los valores se obtienen del archivo .env
+    environment:
+
+      # Usuario administrador inicial de PostgreSQL.
+      POSTGRES_USER: ${POSTGRES_USER}
+
+      # Contraseña del usuario inicial.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Nombre de la base de datos que se creará inicialmente.
+      POSTGRES_DB: ${POSTGRES_DB}
+
+    # Configuración de puertos, Formato: "PUERTO_HOST:PUERTO_CONTENEDOR"
+    ports:
+
+      # Permite conectarse a PostgreSQL desde nuestra máquina
+      # utilizando localhost:5432.
+      - "5432:5432"
+
+    # Conecta almacenamiento persistente al contenedor.
+    volumes:
+
+      # rag_postgres_data: volumen administrado por Docker.
+      # /var/lib/postgresql: ubicación de almacenamiento de PostgreSQL dentro del contenedor para esta versión de la imagen.      #
+      # Los datos sobreviven aunque eliminemos el contenedor.
+      - rag_postgres_data:/var/lib/postgresql
+
+
+# Declara los volúmenes que utilizará el proyecto.
+volumes:
+
+  # Docker crea este volumen si todavía no existe.
+  rag_postgres_data:

@@ -1,0 +1,30 @@
+# API REST
+fastapi
+uvicorn[standard]
+
+# Configuration and validation
+pydantic>=2.0,<3.0
+pydantic-settings
+
+# Database and ORM
+sqlalchemy>=2.0,<3.0
+psycopg[binary]>=3.2,<4.0
+
+# Library to migrations
+alembic
+
+# Testing
+pytest
+httpx
+
+# Code quality
+ruff
+
+# Library that works with EmailStr of pydantic
+email-validator
+
+# Library to hashing passwords
+pwdlib[argon2]
+
+#Library to implement JWT
+pyjwt

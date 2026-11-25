@@ -1,0 +1,53 @@
+#Inicia los servicios en segundo plano.
+docker compose up -d	
+
+#Detiene y elimina contenedores y red.
+docker compose down	
+
+#Muestra el estado de los contenedores.
+docker compose ps
+
+#Muestra los registros.
+docker compose logs	
+
+#Sigue los registros en tiempo real.
+docker compose logs -f	
+
+#Sigue los registros de PostgreSQL.
+docker compose logs -f db	
+
+#Detiene los servicios sin eliminarlos.
+docker compose stop	
+
+#Inicia servicios previamente detenidos.
+docker compose start	
+
+#Reinicia los servicios.
+docker compose restart	
+
+#Descarga las imágenes actualizadas.
+docker compose pull	
+
+Construye las imágenes definidas en el Compose.
+#docker compose build	
+
+#Valida y muestra la configuración resultante.
+docker compose config	
+
+
+
+
+
+# 1. Inicializa la estructura de Alembic en el proyecto (se ejecuta una sola vez)
+alembic init alembic
+
+# 2. Genera un nuevo archivo de migración detectando cambios en los modelos
+alembic revision --autogenerate -m "descripcion_del_cambio"
+
+# 3. Aplica las migraciones pendientes en la base de datos real
+alembic upgrade head
+
+
+
+# Genera una clave secreta de 32 bytes
+openssl rand -hex 32

@@ -1,0 +1,37 @@
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+ENV/
+
+# Archivos generados por Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Cachés de pruebas y herramientas
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.coverage
+coverage.xml
+htmlcov/
+
+# Distribución y empaquetado
+build/
+dist/
+*.egg-info/
+
+# Editores y sistema operativo
+.idea/
+*.swp
+.DS_Store
+
+# Registros
+*.log

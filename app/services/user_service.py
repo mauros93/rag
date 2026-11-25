@@ -1,6 +1,3 @@
-# Session representa una sesión de trabajo con SQLAlchemy.
-from sqlalchemy.orm import Session
-
 from app.core.exceptions import (
     EmailAlreadyRegisteredError,
     NullFieldError,
@@ -29,9 +26,9 @@ class UserService:
     concretas mediante los manejadores de ``app.main``.
     """
 
-    def __init__(self, db: Session):
-        # Construimos el repositorio con la sesión recibida desde el router.
-        self.user_repository = UserRepository(db)
+    def __init__(self, user_repository: UserRepository):
+        # El repositorio se inyecta desde la capa de dependencias.
+        self.user_repository = user_repository
 
     def create_user(self, user_data: UserIn) -> User:
         """

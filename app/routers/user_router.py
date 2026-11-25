@@ -1,28 +1,23 @@
-# Depends: mecanismo de inyección de dependencias
+# Depends: mecanismo de inyección de dependencias.
 # status: proporciona constantes para los códigos HTTP.
-from fastapi import APIRouter, Depends, status, Path, Query
+# Path y Query: validan parámetros de ruta y de consulta.
+from fastapi import APIRouter, Depends, Path, Query, status
 
-# Session representa una sesión de SQLAlchemy.
-from sqlalchemy.orm import Session
+# Dependencias compartidas de la capa HTTP.
+from app.core.dependencies import get_user_service, require_admin
 
-# Importamos la dependencia que proporciona
-# una sesión de conexión con PostgreSQL.
-from app.core.dependencies import require_admin
-from app.db.database import get_db
-
-# Importamos el servicio que contiene
-# la lógica de negocio de los usuarios.
+# User es el modelo ORM usado por las dependencias de autenticación.
 from app.models.user_model import User
-from app.services.user_service import UserService
+
+# ErrorResponse documenta la estructura de las respuestas de error.
+from app.schemas.error_response import ErrorResponse
 
 # UserIn define y valida los datos recibidos.
 # UserOut define la estructura de la respuesta.
 from app.schemas.user_schema import UserIn, UserOut, UserRoleUpdate, UserUpdate
 
-
-from app.schemas.error_response import ErrorResponse
-
-
+# UserService contiene la lógica de negocio de los usuarios.
+from app.services.user_service import UserService
 
 # --------------------------------------------------
 # 1. CONFIGURACIÓN DEL ROUTER
@@ -71,19 +66,8 @@ def create_user(
     # JSON de la solicitud y lo valida mediante UserIn.
     user_data: UserIn,
 
-    # --------------------------------------------------
-    # INYECCIÓN DE DEPENDENCIAS (DI)
-    # --------------------------------------------------
-
-    # Depends(get_db) indica a FastAPI que debe ejecutar
-    # get_db() para obtener una sesión de PostgreSQL.
-    #
-    # FastAPI administra el ciclo de vida de esta
-    # dependencia: entrega la sesión y, al finalizar
-    # la solicitud, permite que get_db() la cierre.
-    #
-    # Session indica el tipo de objeto esperado.
-    db: Session = Depends(get_db)
+    # FastAPI inyecta el servicio con su repositorio ya configurado.
+    user_service: UserService = Depends(get_user_service)
 ):
 
     """
@@ -94,16 +78,8 @@ def create_user(
     - **password**: Mínimo 8 caracteres, al menos un número y un símbolo.
     """
 
-    # Creamos el servicio y le entregamos la sesión
-    # que FastAPI proporcionó mediante inyección.
-    #
-    # El router no necesita conocer cómo se crea
-    # la conexión ni cómo funciona PostgreSQL.
-    user_service = UserService(db)
-
-    # Delegamos la operación al servicio.
-    # El servicio aplica las reglas de negocio
-    # y utiliza el repositorio para guardar el usuario.
+    # Delegamos la operación al servicio, que aplica las reglas
+    # de negocio y usa el repositorio para guardar el usuario.
     return user_service.create_user(user_data)
 
 
@@ -130,16 +106,14 @@ def get_users(
         le=50,
         description="Cantidad máxima de usuarios por página."
     ),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
+    user_service: UserService = Depends(get_user_service)
 ):
     """
     Recupera usuarios mediante paginación.
 
     El límite máximo permitido es de 50 usuarios por solicitud.
     """
-
-    user_service = UserService(db)
 
     return user_service.get_all_users(
         skip=skip,
@@ -154,11 +128,9 @@ def get_users(
 def update_user_role(
     user_id: int,
     role_data: UserRoleUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_admin),
+    user_service: UserService = Depends(get_user_service)
 ):
-    user_service = UserService(db)
-
     return user_service.update_user_role(
         user_id=user_id,
         new_role=role_data.role
@@ -177,7 +149,7 @@ def update_user_role(
             "description": "El usuario con el ID especificado no fue encontrado."
         }
     }
-)
+)   
 def get_user(
     user_id: int = Path(
         ...,
@@ -186,12 +158,11 @@ def get_user(
         example=1,
         gt=0
     ),
-    db: Session = Depends(get_db)
+    user_service: UserService = Depends(get_user_service)
 ):
     """
     Recupera la información detallada de un usuario según su **ID numérico**.
     """
-    user_service = UserService(db)
     return user_service.get_user_by_id(user_id)
 
 
@@ -208,11 +179,10 @@ def get_user(
     }
 )
 def update_user(
+    user_data: UserUpdate,
     user_id: int = Path(..., gt=0),
-    user_data: UserUpdate = ...,
-    db: Session = Depends(get_db)
+    user_service: UserService = Depends(get_user_service)
 ):
-    user_service = UserService(db)
     return user_service.update_user(user_id, user_data)
 
 
@@ -226,9 +196,8 @@ def update_user(
 )
 def delete_user(
     user_id: int = Path(..., gt=0),
-    db: Session = Depends(get_db)
+    user_service: UserService = Depends(get_user_service)
 ):
-    user_service = UserService(db)
     user_service.delete_user(user_id)
 
 
